@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
-    #resultado { padding: 15px; margin-top: 10px; border-radius: 8px; background: #eee; font-size: 18px; text-align: left; }
+    #resultado { padding: 15px; margin-top: 10px; border-radius: 8px; background: #eee; font-size: 18px; text-align: left; word-break: break-word; }
     .ok { background: #c8f7c5 !important; }
     .error { background: #f7c5c5 !important; }
     .estado { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
@@ -21,7 +21,8 @@
   <div id="resultado">Iniciando cámara...</div>
 
   <script>
-    const URL_SCRIPT = 'AKfycbyjeTX5vFZEd0-i6b82WL4e325Kf7IdVL2zM1D5NTtrSnku0fBXP2U_6PHHGfw1GOaQGg/exec';
+    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbyjeTX5vFZEd0-i6b82WL4e325Kf7IdVL2zM1D5NTtrSnku0fBXP2U_6PHHGfw1GOaQGg/exec';
+
     const div = document.getElementById('resultado');
     let bloqueado = false;
 
@@ -44,10 +45,15 @@
       bloqueado = true;
       div.className = '';
       div.innerText = 'Registrando...';
+
       fetch(URL_SCRIPT + '?id=' + encodeURIComponent(texto))
-        .then(r => r.json())
+        .then(r => r.text())
+        .then(t => {
+          try { return JSON.parse(t); }
+          catch (e) { throw new Error('Respuesta inesperada: ' + t.substring(0, 150)); }
+        })
         .then(mostrar)
-        .catch(e => mostrar({ ok: false, mensaje: 'Error de conexión: ' + e.message }))
+        .catch(e => mostrar({ ok: false, mensaje: e.message }))
         .finally(() => setTimeout(() => { bloqueado = false; }, 3000));
     }
 
