@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control de ingreso</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
+    #resultado { padding: 15px; margin-top: 10px; border-radius: 8px; background: #eee; font-size: 18px; text-align: left; }
+    .ok { background: #c8f7c5 !important; }
+    .error { background: #f7c5c5 !important; }
+    .estado { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
+    .nombre { font-size: 20px; font-weight: bold; }
+    a { color: #000; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Control de ingreso</h2>
+  <div id="reader" style="width:100%; max-width:400px; margin:auto;"></div>
+  <div id="resultado">Iniciando cámara...</div>
+
+  <script>
+    const URL_SCRIPT = 'PEGA_AQUI_TU_URL_EXEC';
+    const div = document.getElementById('resultado');
+    let bloqueado = false;
+
+    function mostrar(r) {
+      div.className = r.ok ? 'ok' : 'error';
+      let html = '<div class="estado">' + (r.ok ? '✅ Ingreso registrado' : '❌ ' + r.mensaje) + '</div>';
+      if (r.postulante) {
+        const p = r.postulante;
+        html += '<div class="nombre">' + p.nombre + '</div>'
+              + 'CI: ' + p.ci + '<br>'
+              + 'Grupo: ' + p.grupo + '<br>'
+              + 'Responsable: ' + p.responsable + '<br>'
+              + 'Celular: <a href="tel:' + p.celular + '">' + p.celular + '</a>';
+      }
+      div.innerHTML = html;
+    }
+
+    function onScan(texto) {
+      if (bloqueado) return;
+      bloqueado = true;
+      div.className = '';
+      div.innerText = 'Registrando...';
+      fetch(URL_SCRIPT + '?id=' + encodeURIComponent(texto))
+        .then(r => r.json())
+        .then(mostrar)
+        .catch(e => mostrar({ ok: false, mensaje: 'Error de conexión: ' + e.message }))
+        .finally(() => setTimeout(() => { bloqueado = false; }, 3000));
+    }
+
+    new Html5Qrcode("reader")
+      .start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan)
+      .then(() => { div.innerText = 'Esperando QR...'; })
+      .catch(err => {
+        div.className = 'error';
+        div.innerText = 'No se pudo abrir la cámara: ' + err;
+      });
+  </script>
+</body>
+</html>
